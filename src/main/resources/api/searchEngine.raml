@@ -1,0 +1,15 @@
+#%RAML 1.0
+title: SearchEngineAPI
+version: v1
+
+/search:
+  get:
+    queryParameters:
+      path:
+        required: true
+        type: string
+        example: "c:\\folder"
+      search:
+        required: true
+        type: string
+        example: "Word"

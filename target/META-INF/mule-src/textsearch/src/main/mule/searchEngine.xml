@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <http:listener-config name="searchEngine-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="searchEngine-config" api="searchEngine.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="searchEngine-main">
+        <http:listener config-ref="searchEngine-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="searchEngine-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="searchEngine-console">
+        <http:listener config-ref="searchEngine-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="searchEngine-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\search:searchEngine-config">
+        <ee:transform doc:name="DW to split the words and put it in a variable" doc:id="7aa87bc4-a0a0-468b-bffc-e78607f39c44" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="searchedQuery" ><![CDATA[%dw 2.0
+output application/java
+---
+attributes.queryParams.search splitBy(" ") groupBy (item, index) -> item]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<file:list doc:name="List" doc:id="aecfbda2-82a3-4386-b30c-5df9d1e2e7ee" directoryPath="#[attributes.queryParams.path]"/>
+		<set-variable value="#[[]]" doc:name="Prepare the result variable as array" doc:id="1aae8849-7022-4074-9886-8b580a05a59f" variableName="result"/>
+		<foreach doc:name="For Each for the files in the directory" doc:id="30422f12-b54d-4d17-9577-8f557d6f68b3" collection="#[payload]">
+			<file:read doc:name="Read" doc:id="d59999fc-2616-4c18-b999-65ccdcf90b89" path="#[attributes.path]"/>
+			<set-variable value="#[payload]" doc:name="Set the content of the file to the fileContent variable" doc:id="dc34cedf-c57b-47fe-bb95-ce95ce8b267e" variableName="fileContent"/>
+			<set-variable value="0" doc:name="Prepare the quantityFound variable (Number of words found)" doc:id="5a7d1476-5689-4483-9965-a70906cc08da" variableName="quantityFound" mimeType="application/java"/>
+			<foreach doc:name="For Each for the words of the query" doc:id="65b274fd-915a-4c6e-b329-b780737dc605" collection="#[vars.searchedQuery pluck $$]">
+				<logger level="INFO" doc:name="Logger" doc:id="dc973880-3f0d-47c9-af1d-d982262c3a17" message="#[payload]" />
+				<ee:transform doc:name="Use the find function to find the word in the content" doc:id="671630d4-fe43-40af-a5e9-f9949ca7d1e3" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	foundText: vars.fileContent as String find payload
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="d924c5f1-92f7-4019-bbf8-babd4b83097b" message="#[payload.foundText]"/>
+				<set-variable value="#[if(!isEmpty(payload.foundText)) vars.quantityFound as Number + 1 else (vars.quantityFound)]" doc:name="Set Variable quantityFound +1" doc:id="352ba1f9-4399-48f9-a359-4b8d359e236d" variableName="quantityFound" mimeType="application/java"/>
+			</foreach>
+			<ee:transform doc:name="Save the result in the array to return in the API" doc:id="644da59d-a2cc-49a2-b2d4-688ee64b3f0d">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	FileName: attributes.fileName,
+	SearchPercent: ((vars.quantityFound as Number / sizeOf(vars.searchedQuery) ) * 100) as String ++ "%"
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<set-variable value="#[vars.result &lt;&lt; payload]" doc:name="Save the result in the array" doc:id="705cadf6-5e26-4dec-bbee-b06dd0c6eea6" variableName="result"/>
+		</foreach>
+		<set-variable value='#[if(sizeOf(vars.result filter ($.SearchPercent != "0%"))&lt;10) sizeOf(payload)-1 else 9]' doc:name="Prepare the Maximun of 10 results or less" doc:id="7170f265-ecc0-4b93-b751-2ff1110a9aaa" variableName="maximum"/>
+		<ee:transform doc:name="Transform Message" doc:id="b9859954-e0e9-45ec-b814-be3a0fead40f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	QuantityFilesDirectory: sizeOf(payload),
+	Result: (vars.result map ((item) -> {
+		FileName: item.FileName,
+		SearchPercent: item.SearchPercent
+	})  orderBy $.SearchPercent )[vars.maximum as Number to 0] filter ($.SearchPercent != "0%")
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+</mule>
